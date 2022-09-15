@@ -13,6 +13,7 @@ void RushRelabelAlgo::init(MaxFlowStd *mx){
     flows = (int**)calloc(nv, sizeof(int*));
     reverseMap = (vector<int> *)calloc(nv, sizeof(vector<int>));
 
+    work = (int*)calloc(nv, sizeof(int));
     #pragma omp parallel for
     for(int i =0;i<nv;i++){
         res[i] = (int*)calloc(nv, sizeof(int));
@@ -151,10 +152,115 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             #pragma omp single
             {
                 for(auto itr = activeSet.begin();itr != activeSet.end();itr++){
-                    
+                   #pragma omp task untied
+                   {
+                    //init work
+                    work[v] = 0;
+                    int v = *itr;
+                    discoveredVertices[v].clear();
+                    localLabel[v] = h[v];
+                    //local copy of excess of cur vertex
+                    int le = ex[v];
+                    while(le >0){
+                        int nb = nv;
+                        //Use to resolve conflict between neighboring vertex
+                        bool skip = false;
+                        int scaned = 0;
+                        bool hasPush = false;
+
+                        for(int i =0;i<nv;i++){
+                            if(res[v][i]>0){
+                                if(le == 0) break;
+                                scaned++;
+                                bool admissible = (localLabel[v] == h[i]+1);
+                                //resolve conflicts, in this case the concurrent version always
+                                // has sequential replacement
+                                if(ex[i]>0){
+                                   bool win = d[v] ==d[i]+1 || d[v]<d[i]-1 || (d[v] == d[i] && v<i);
+                                   if(admissible && (!win)){
+                                    skip = true;
+                                    continue;
+                                   }
+                                }
+                                if(admissible){
+                                    int dlt = min(res[v][i],le);
+                                    flows[v][i] += dlt;
+                                    flows[i][v] -= dlt;
+                                    le -= dlt;
+                                    atomic_fetch_add(&acumEx[i], dlt);
+                                    if (i != sk){
+                                        discoveredVertices[v].push_back(i);
+                                    }
+                                    hasPush = true;
+                                }
+                                //Modification to the original algo
+                                //The original has mistakes here
+                                //Should use runtime residual network to check
+                                if (le>0 && cap[v][i]-flows[v][i]>0) {
+                                    nb = min(nb, d[i] + 1);
+                                }
+                            }
+                        }
+                        if(le == 0 || skip){
+                            break;
+                        }
+                        localLabel[v] = nb;
+                        work[v] = work[v]+scaned+beta;
+                        if(localLabel[v] == nv){
+                            break;
+                        }
+                    }
+                    acumEx[v] = acumEx[v] + (le - ex[v]);
+                    if(le>0){
+                        discoveredVertices[v].push(v);
+                    }
+
+                   } 
                 }
             }
+            #pragma omp taskwait
         }
+        #pragma omp parallel for
+        for(int i=0;i<nv;i++){
+            h[i] = localLabel[i];
+            ex[i] = ex[i]+acumEx[i];
+            acumEx[i] = 0;
+            reverseMap[i].clear();
+        }
+        unordered_set<int> swpSet;
+        for(int i:activeSet){
+            workSinceLastGR += work[i];
+            for(int j =0;j<discoveredVertices[i].size();k++){
+                int cur = discoveredVertices[i][j];
+                if(h[cur]<nv){
+                    res[i][cur] = g[i][cur]-flows[i][cur];
+                    res[cur][i] = g[cur][i]-flows[cur][i];
+                    swpSet.insert(cur);
+                }
+            }
+            residual[i][sk] = g[i][sk] - flows[i][sk];
+            residual[sk][i] = g[sk][i] - flows[sk][i];
+
+        }
+        activeSet.swap(swpSet);
+        #pragma omp parallel
+        {
+           #pragma omp single
+           {
+            for (auto itr = activegSet.begin(); itr != activeSet.end(); itr++){
+                #pragma omp task
+                {
+                    int cur = *itr;
+                    ex[cur] = ex[cur]+acumEx[cur];
+                    acumEx[cur] = 0;
+                }
+            }
+
+           }
+        }
+        double duration = c.duration();
+        rest->val = ex[sk];
+        rest->flow = flows;
         
     }
 

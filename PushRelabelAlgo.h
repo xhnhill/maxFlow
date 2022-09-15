@@ -25,6 +25,8 @@ class RushRelabelAlgo{
     unordered_set<int> activeSet;
     //Dynamic flow in graph
     int** flows;
+    //statistic for the bfs condition
+    int* work;
     void init(MaxFlowStd* mx);
     void preflow(MaxFlowStd* mx);
     void globalRelabel(int numV, int sc, int sk);

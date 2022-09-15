@@ -1,0 +1,95 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <omp.h>
+#include "tbb/concurrent_vector.h"
+#include "world.h"
+#include "pushrelabel_parallel.h"
+using namespace std;
+
+Problem readGraph(string path){
+   ifstream inStream (path);
+   int fullNum; inStream>>fullNum;
+   int edgePairNum; inStream>>edgePairNum;
+   int actualNodeNum; inStream>>actualNodeNum;
+   int res; inStream>>res;
+   int** cap = new int*[fullNum];
+   for(int i =0;i<fullNum;i++){
+      cap[i] = new int[fullNum];
+   }
+   for(int i = 0;i<edgePairNum;i++){
+      int sc;inStream>>sc;
+      int tar;inStream>>tar;
+      inStream >> cap[sc-1][tar-1];
+   }
+   int** compareMatrix = new int*[actualNodeNum];
+   for(int i=0;i<actualNodeNum;i++){
+      compareMatrix[i] = new int[actualNodeNum];
+   }
+   for(int i =0;i<actualNodeNum;i++){
+      for(int j = 0;j<actualNodeNum;j++){
+         inStream>>compareMatrix[i][j];
+      }
+   }
+   int allMin; inStream>>allMin;
+   Graph g;
+   g.num_vertices = fullNum;
+   g.capacities = cap;
+   Problem p; p.compareMatrix=compareMatrix;p.res = allMin;p.actualNum=actualNodeNum;p.g=g;
+   return p;
+   
+   
+}
+bool compare(Problem p){
+   MaxFlowInstance mf;
+   mf.inputGraph = p.g;
+   bool flg = true;
+   for(int i =0;i<p.actualNum;i++){
+      for(int j = 0;j<p.actualNum;j++){
+         if(i!=j){
+            mf.source = i;
+            mf.sink =j;
+            MaxFlowSolution ms;
+            PushRelabelParallelSolver ps;
+            ps.pushRelabel(&mf,&ms);
+            if(ms.maxFlow !=p.compareMatrix[i][j]){
+               cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
+               flg = false;
+            }
+         }
+      }
+   }
+   return flg;
+
+}
+void testCode(){
+   tbb::concurrent_vector<int> q;
+   Graph g;
+   g.num_vertices = 4;
+   int** cap = new int*[g.num_vertices];
+   for(int i =0;i<g.num_vertices;i++){
+      cap[i] = new int[g.num_vertices];
+   }
+   cap[0][2] = 1;
+   cap[0][1] = 1;
+   cap[1][2] =1;
+   g.capacities = cap;
+   MaxFlowInstance mf;
+   mf.inputGraph = g;
+   mf.sink=2;
+   mf.source =0;
+   PushRelabelParallelSolver sr;
+   MaxFlowSolution ms;
+   sr.pushRelabel(&mf,&ms);
+   cout<< ms.maxFlow;
+   readGraph("tmp.txt");
+}
+int main()
+{
+   //testCode();
+   omp_set_num_threads(8);
+   Problem p = readGraph("3");
+   cout<<compare(p);
+}
+
