@@ -1,7 +1,7 @@
 #include "PushRelabelAlgo.h"
 using namespace std;
 
-void RushRelabelAlgo::init(MaxFlowStd *mx){
+void PushRelabelAlgo::init(MaxFlowStd *mx){
     int nv = mx->g.num_vertices;
     ex = (int*)calloc(nv, sizeof(int));
     localEx = (int*)calloc(nv, sizeof(int));
@@ -22,7 +22,7 @@ void RushRelabelAlgo::init(MaxFlowStd *mx){
     activeSet.clear();
 
 }
-void RushRelabelAlgo::preflow(MaxFlowStd* mx){
+void PushRelabelAlgo::preflow(MaxFlowStd* mx){
     init(mx);
     //preflow
     int nv = mx->g.num_vertices;
@@ -46,14 +46,15 @@ void RushRelabelAlgo::preflow(MaxFlowStd* mx){
             
         }
         //initialize other residual flow
-        for(int j = 0;i<nv;j++){
+        for(int j = 0;j<nv;j++){
             res[i][j] = g[i][j] - flows[i][j] > 0?g[i][j] - flows[i][j]:res[i][j];
         }
     }
+    tbb::concurrent_vector<int> eptVec = {};
     for(int i=0;i<nv;i++){
         if(i != sc && ex[i]>0) activeSet.insert(i);
         //??
-        discoveredVertices.push_back(new tbb::concurrent_vector<int>());
+        discoveredVertices.push_back(eptVec);
     }
 
 }
@@ -66,7 +67,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
     h[sk] =0;
     //bfs, using queue
     tbb::concurrent_vector<int> queue;
-    queue.push_back(sink);
+    queue.push_back(sk);
     //Modification here!! cache locality or single thread?
     
     for(int i=0;i<nv;i++){
@@ -79,7 +80,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
     while(queue.size()>0){
         #pragma omp parallel for
         for(int i=0;i<queue.size();i++){
-            int cur = q[i];
+            int cur = queue[i];
             discoveredVertices[cur].clear();
             //modify here
             for(int j =0;j<reverseMap[cur].size();j++){
@@ -100,7 +101,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
         for(int i =0;i<queue.size();i++){
             int cur = queue[i];
             for(int j =0;j<discoveredVertices[cur].size();j++){
-                tmp.push_back(discoveredVertices[cur]);
+                tmp.push_back(discoveredVertices[cur][j]);
             }
         }
         queue.swap(tmp);
@@ -129,7 +130,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         //one solution is run bfs after each iteration
         //the other is fix the relabel condition
         // Here for the performance, use the later one
-        if(freq * workSinceLastGR > a * nv + ne){
+        if(freq * workSinceLastGR > alp * nv + ne){
 
             workSinceLastGR = 0;
             globalRelabel(nv, sc, sk);
@@ -139,14 +140,16 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             localLabel[i] = h[i];
             }
             unordered_set<int> tmpSet;
-            for(int v : workingSet){
+            for(int v : activeSet){
             if(h[v] < nv && v != mx->sk){
                 tmpSet.insert(v);
             }
             }
         activeSet.swap(tmpSet);
         }
-        if(activeSet.empty()) break;
+        if(activeSet.empty()) {
+            break;
+        }
         #pragma omp parallel
         {
             #pragma omp single
@@ -154,9 +157,10 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                 for(auto itr = activeSet.begin();itr != activeSet.end();itr++){
                    #pragma omp task untied
                    {
+                    int v = *itr;
                     //init work
                     work[v] = 0;
-                    int v = *itr;
+                    
                     discoveredVertices[v].clear();
                     localLabel[v] = h[v];
                     //local copy of excess of cur vertex
@@ -176,7 +180,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                                 //resolve conflicts, in this case the concurrent version always
                                 // has sequential replacement
                                 if(ex[i]>0){
-                                   bool win = d[v] ==d[i]+1 || d[v]<d[i]-1 || (d[v] == d[i] && v<i);
+                                   bool win = h[v] ==h[i]+1 || h[v]<h[i]-1 || (h[v] == h[i] && v<i);
                                    if(admissible && (!win)){
                                     skip = true;
                                     continue;
@@ -196,8 +200,8 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                                 //Modification to the original algo
                                 //The original has mistakes here
                                 //Should use runtime residual network to check
-                                if (le>0 && cap[v][i]-flows[v][i]>0) {
-                                    nb = min(nb, d[i] + 1);
+                                if (le>0 && g[v][i]-flows[v][i]>0) {
+                                    nb = min(nb, h[i] + 1);
                                 }
                             }
                         }
@@ -212,7 +216,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                     }
                     acumEx[v] = acumEx[v] + (le - ex[v]);
                     if(le>0){
-                        discoveredVertices[v].push(v);
+                        discoveredVertices[v].push_back(v);
                     }
 
                    } 
@@ -230,7 +234,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         unordered_set<int> swpSet;
         for(int i:activeSet){
             workSinceLastGR += work[i];
-            for(int j =0;j<discoveredVertices[i].size();k++){
+            for(int j =0;j<discoveredVertices[i].size();j++){
                 int cur = discoveredVertices[i][j];
                 if(h[cur]<nv){
                     res[i][cur] = g[i][cur]-flows[i][cur];
@@ -238,8 +242,8 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                     swpSet.insert(cur);
                 }
             }
-            residual[i][sk] = g[i][sk] - flows[i][sk];
-            residual[sk][i] = g[sk][i] - flows[sk][i];
+            res[i][sk] = g[i][sk] - flows[i][sk];
+            res[sk][i] = g[sk][i] - flows[sk][i];
 
         }
         activeSet.swap(swpSet);
@@ -247,7 +251,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         {
            #pragma omp single
            {
-            for (auto itr = activegSet.begin(); itr != activeSet.end(); itr++){
+            for (auto itr = activeSet.begin(); itr != activeSet.end(); itr++){
                 #pragma omp task
                 {
                     int cur = *itr;
@@ -258,10 +262,11 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
 
            }
         }
-        double duration = c.duration();
-        rest->val = ex[sk];
-        rest->flow = flows;
+        
         
     }
+    double duration = c.duration();
+        rest->val = ex[sk];
+        rest->flow = flows;
 
 }

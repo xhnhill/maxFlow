@@ -4,8 +4,7 @@
 #include <string>
 #include <omp.h>
 #include "tbb/concurrent_vector.h"
-#include "world.h"
-#include "pushrelabel_parallel.h"
+#include "PushRelabelAlgo.h"
 using namespace std;
 
 Problem readGraph(string path){
@@ -42,18 +41,18 @@ Problem readGraph(string path){
    
 }
 bool compare(Problem p){
-   MaxFlowInstance mf;
-   mf.inputGraph = p.g;
+   MaxFlowStd mf;
+   mf.g = p.g;
    bool flg = true;
    for(int i =0;i<p.actualNum;i++){
       for(int j = 0;j<p.actualNum;j++){
          if(i!=j){
-            mf.source = i;
-            mf.sink =j;
-            MaxFlowSolution ms;
-            PushRelabelParallelSolver ps;
+            mf.sc = i;
+            mf.sk =j;
+            MaxFlowRes ms;
+            PushRelabelAlgo ps;
             ps.pushRelabel(&mf,&ms);
-            if(ms.maxFlow !=p.compareMatrix[i][j]){
+            if(ms.val !=p.compareMatrix[i][j]){
                cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
                flg = false;
             }
@@ -75,21 +74,21 @@ void testCode(){
    cap[0][1] = 1;
    cap[1][2] =1;
    g.capacities = cap;
-   MaxFlowInstance mf;
-   mf.inputGraph = g;
-   mf.sink=2;
-   mf.source =0;
-   PushRelabelParallelSolver sr;
-   MaxFlowSolution ms;
+   MaxFlowStd mf;
+   mf.g= g;
+   mf.sk=2;
+   mf.sc =0;
+   PushRelabelAlgo sr;
+   MaxFlowRes ms;
    sr.pushRelabel(&mf,&ms);
-   cout<< ms.maxFlow;
+   cout<< ms.val;
    readGraph("tmp.txt");
 }
 int main()
 {
    //testCode();
    omp_set_num_threads(8);
-   Problem p = readGraph("3");
+   Problem p = readGraph("1");
    cout<<compare(p);
 }
 
