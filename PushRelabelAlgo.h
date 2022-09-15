@@ -8,8 +8,8 @@ using namespace std;
 
 class RushRelabelAlgo{
     public:
-    Clock t;
-    void pushRelabel(MaxFlowStd *mx,MaxFlowRes *result);
+    Clock c;
+     void pushRelabel(MaxFlowStd *mx,MaxFlowRes *result);
     private:
     //excess val of vertex
     int* ex;

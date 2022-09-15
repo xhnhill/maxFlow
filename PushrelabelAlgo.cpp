@@ -5,18 +5,18 @@ void RushRelabelAlgo::init(MaxFlowStd *mx){
     int nv = mx->g.num_vertices;
     ex = (int*)calloc(nv, sizeof(int));
     localEx = (int*)calloc(nv, sizeof(int));
-    localLabel = (int*)calloc(numVertices, sizeof(int));
+    localLabel = (int*)calloc(nv, sizeof(int));
     acumEx = (atomic_int*)calloc(nv, sizeof(atomic_int));
     h = (atomic_int*)calloc(nv,sizeof(atomic_int));
 
-    res = (int**)calloc(numVertices, sizeof(int*));
-    flows = (int**)calloc(numVertices, sizeof(int*));
-    reverseMap = (vector<int> *)calloc(numVertices, sizeof(vector<int>));
+    res = (int**)calloc(nv, sizeof(int*));
+    flows = (int**)calloc(nv, sizeof(int*));
+    reverseMap = (vector<int> *)calloc(nv, sizeof(vector<int>));
 
     #pragma omp parallel for
     for(int i =0;i<nv;i++){
-        res[i] = (int*)calloc(numVertices, sizeof(int));
-        flows[i] = (int*)calloc(numVertices, sizeof(int));
+        res[i] = (int*)calloc(nv, sizeof(int));
+        flows[i] = (int*)calloc(nv, sizeof(int));
     }
     activeSet.clear();
 
@@ -39,7 +39,7 @@ void RushRelabelAlgo::preflow(MaxFlowStd* mx){
     for(int i = 0;i<nv;i++){
         if(g[sc][i] >0 && i != sc){
             flows[sc][i] = g[sc][i];
-            flows[i][sc] = -[sc][i];
+            flows[i][sc] = -g[sc][i];
             res[sc][i] = g[sc][i]-flows[sc][i];
             ex[i] = g[sc][i];
             
@@ -94,7 +94,68 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
             
         }
         tbb::concurrent_vector<int> tmp;
-        
+        //Difference??
+        #pragma omp parallel for
+        for(int i =0;i<queue.size();i++){
+            int cur = queue[i];
+            for(int j =0;j<discoveredVertices[cur].size();j++){
+                tmp.push_back(discoveredVertices[cur]);
+            }
+        }
+        queue.swap(tmp);
 
     }
+}
+void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
+    //begin record
+    c.reset();
+    //statistics which helps to decide if need bfs, introduced in prsn
+    int workSinceLastGR = INT_MAX;
+    //Use default para used by prsn
+    float freq = 0.5; 
+    int alp = 6; 
+    int beta = 12;
+    preflow(mx);
+    int nv = mx->g.num_vertices;
+    int ne = mx->g.num_edges;
+    int** g = mx->g.capacities;
+    int sc = mx->sc;
+    int sk = mx->sk;
+
+    while(true){
+        //Modify freq * workSinceLastGR > a * numVertices + numEdges
+        //original prsn algo has some mistakes,
+        //one solution is run bfs after each iteration
+        //the other is fix the relabel condition
+        // Here for the performance, use the later one
+        if(freq * workSinceLastGR > a * nv + ne){
+
+            workSinceLastGR = 0;
+            globalRelabel(nv, sc, sk);
+            //Test parallel performance here
+            #pragma omp parallel for
+            for(int i = 0; i < nv; i++){
+            localLabel[i] = h[i];
+            }
+            unordered_set<int> tmpSet;
+            for(int v : workingSet){
+            if(h[v] < nv && v != mx->sk){
+                tmpSet.insert(v);
+            }
+            }
+        activeSet.swap(tmpSet);
+        }
+        if(activeSet.empty()) break;
+        #pragma omp parallel
+        {
+            #pragma omp single
+            {
+                for(auto itr = activeSet.begin();itr != activeSet.end();itr++){
+                    
+                }
+            }
+        }
+        
+    }
+
 }
