@@ -100,11 +100,11 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
         }
         tbb::concurrent_vector<int> tmp;
         //Difference??
-        #pragma omp parallel for
-        for(int i=0;i<queue.size();i++){
-            int cur = queue[i];
-            for(int j =0;j<discoveredVertices[cur].size();j++){
-                tmp.push_back(discoveredVertices[cur][j]);
+        
+        for(int i:queue){
+            #pragma omp parallel for
+            for(int j =0;j<discoveredVertices[i].size();j++){
+                tmp.push_back(discoveredVertices[i][j]);
                 //cout<<"push "<<discoveredVertices[cur][j]<<"\n";
             }
         }
@@ -145,11 +145,11 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             }
             unordered_set<int> tmpSet;
             for(int v : activeSet){
-            if(h[v] < nv && v != sk){
-                tmpSet.insert(v);
+                if(h[v] < nv && v != sk){
+                    tmpSet.insert(v);
+                }
             }
-            }
-        activeSet.swap(tmpSet);
+            activeSet.swap(tmpSet);
         }
         if(activeSet.empty()) {
             break;
@@ -220,7 +220,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                             break;
                         }
                     }
-                    acumEx[v] = acumEx[v] + (le - ex[v]);
+                    acumEx[v] +=(le - ex[v]);
                     if(le>0){
                         discoveredVertices[v].push_back(v);
                     }
@@ -233,7 +233,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         #pragma omp parallel for
         for(int i=0;i<nv;i++){
             h[i] = localLabel[i];
-            ex[i] = ex[i]+acumEx[i];
+            ex[i] +=acumEx[i];
             acumEx[i] = 0;
             reverseMap[i].clear();
         }
@@ -261,7 +261,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                 #pragma omp task
                 {
                     int cur = *itr;
-                    ex[cur] = ex[cur]+acumEx[cur];
+                    ex[cur] +=acumEx[cur];
                     acumEx[cur] = 0;
                 }
             }
