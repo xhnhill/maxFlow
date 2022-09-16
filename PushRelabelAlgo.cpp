@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <omp.h>
 #include "PushRelabelAlgo.h"
 using namespace std;
 
@@ -112,7 +114,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
 
     }
 }
-void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
+double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
     //begin record
     c.reset();
     //statistics which helps to decide if need bfs, introduced in prsn
@@ -275,6 +277,22 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
     }
     double duration = c.duration();
         rest->val = ex[sk];
-        rest->flow = flows;
+        //rest->flow = flows;
+        //free mem
+        free(ex);
+        free(acumEx);
+        free(localEx);
+        free(localLabel);
+        free(h);
+        for(int i=0;i<nv;i++){
+            free(res[i]);
+            free(flows[i]);
+            reverseMap->clear();
+        }
+        free(res);
+        free(flows);
+        free(work);
+        activeSet.clear();
+        return duration;
 
 }

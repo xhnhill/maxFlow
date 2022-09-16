@@ -40,10 +40,12 @@ Problem readGraph(string path){
    
    
 }
-bool compare(Problem p){
+bool compare(Problem p,int corenum,string target,string dir,string idx){
    MaxFlowStd mf;
    mf.g = p.g;
    bool flg = true;
+   ofstream exp;
+   exp.open(dir+"/res"+to_string(corenum)+target+dir+"_"+idx);
    for(int i =0;i<p.actualNum;i++){
       for(int j = 0;j<p.actualNum;j++){
          if(i!=j){
@@ -51,14 +53,18 @@ bool compare(Problem p){
             mf.sk =j;
             MaxFlowRes ms;
             PushRelabelAlgo ps;
-            ps.pushRelabel(&mf,&ms);
+            double dt = ps.pushRelabel(&mf,&ms);
+            exp<<dt;
+            exp<<" ";
             if(ms.val !=p.compareMatrix[i][j]){
                cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
                flg = false;
             }
+
          }
       }
    }
+   exp.close();
    return flg;
 
 }
@@ -84,11 +90,33 @@ void testCode(){
    cout<< ms.val;
    readGraph("tmp.txt");
 }
-int main()
+
+int main(int arg,char** argv)
 {
    //testCode();
+   if(arg == 5){
+      
+      int num = stoi(argv[2]);
+      int coreNum = stoi(argv[4]);
+      string dir(argv[1]);
+      string tar(argv[3]);
+      cout<<"correct param\n";
+      for(int i=1;i<=num;i++){
+         omp_set_num_threads(8);
+         Problem p = readGraph(dir+"/"+to_string(i));
+         compare(p,coreNum,tar,dir,to_string(i));
+         for(int i=0;i<p.g.num_vertices;i++){
+            free(p.g.capacities[i]);
+         }
+         free(p.g.capacities);
+      }
+   }
+
    omp_set_num_threads(8);
-   Problem p = readGraph("2");
-   cout<<compare(p)<<" finished\n";
+   string d = "dir";
+   //Problem p = readGraph(d+"/"+to_string(1));
+   //cout<<compare(p,8,"whole","2","1")<<" finished\n";
 }
+
+
 
