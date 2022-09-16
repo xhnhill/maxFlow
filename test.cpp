@@ -87,8 +87,8 @@ void testCode(){
 int main()
 {
    //testCode();
-   omp_set_num_threads(8);
-   Problem p = readGraph("1");
+   omp_set_num_threads(1);
+   Problem p = readGraph("2");
    cout<<compare(p);
 }
 

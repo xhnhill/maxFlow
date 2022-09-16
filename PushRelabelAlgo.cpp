@@ -1,3 +1,4 @@
+#include <iostream>
 #include "PushRelabelAlgo.h"
 using namespace std;
 
@@ -52,9 +53,9 @@ void PushRelabelAlgo::preflow(MaxFlowStd* mx){
     }
     tbb::concurrent_vector<int> eptVec = {};
     for(int i=0;i<nv;i++){
-        if(i != sc && ex[i]>0) activeSet.insert(i);
-        //??
         discoveredVertices.push_back(eptVec);
+        if(i != sc && ex[i]>0) activeSet.insert(i);
+        
     }
 
 }
@@ -77,7 +78,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
             }
         }
     }
-    while(queue.size()>0){
+    while(!queue.empty()){
         #pragma omp parallel for
         for(int i=0;i<queue.size();i++){
             int cur = queue[i];
@@ -87,9 +88,11 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
                 
                 int nxt = reverseMap[cur][j];
                 if(nxt != sc){
+                    int rpVal = nv;
                     //Label possible edge on res network with distance to sink
-                    if(nxt != sk && h[nxt].compare_exchange_strong(nv,h[cur]+1)){
+                    if(nxt != sk && h[nxt].compare_exchange_strong(rpVal,h[cur]+1)){
                         discoveredVertices[cur].push_back(nxt);
+                        //cout<<cur<<" "<<nxt<<"\n";
                     }
                 }
             }
@@ -98,10 +101,11 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
         tbb::concurrent_vector<int> tmp;
         //Difference??
         #pragma omp parallel for
-        for(int i =0;i<queue.size();i++){
+        for(int i=0;i<queue.size();i++){
             int cur = queue[i];
             for(int j =0;j<discoveredVertices[cur].size();j++){
                 tmp.push_back(discoveredVertices[cur][j]);
+                //cout<<"push "<<discoveredVertices[cur][j]<<"\n";
             }
         }
         queue.swap(tmp);
@@ -141,7 +145,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             }
             unordered_set<int> tmpSet;
             for(int v : activeSet){
-            if(h[v] < nv && v != mx->sk){
+            if(h[v] < nv && v != sk){
                 tmpSet.insert(v);
             }
             }
@@ -174,7 +178,9 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
 
                         for(int i =0;i<nv;i++){
                             if(res[v][i]>0){
-                                if(le == 0) break;
+                                if(le == 0) {
+                                    break;
+                                }
                                 scaned++;
                                 bool admissible = (localLabel[v] == h[i]+1);
                                 //resolve conflicts, in this case the concurrent version always
