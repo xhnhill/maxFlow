@@ -220,6 +220,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
                             break;
                         }
                     }
+                    //use += is atomic on atomic variable, or using explict atomic expression!
                     acumEx[v] +=(le - ex[v]);
                     if(le>0){
                         discoveredVertices[v].push_back(v);
@@ -233,6 +234,7 @@ void PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         #pragma omp parallel for
         for(int i=0;i<nv;i++){
             h[i] = localLabel[i];
+            //atomic attention
             ex[i] +=acumEx[i];
             acumEx[i] = 0;
             reverseMap[i].clear();
