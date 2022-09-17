@@ -230,29 +230,25 @@ int main(int arg,char** argv)
       string choice(argv[1]);
       if(choice == "single"){
          string dir(argv[2]);
-         int fn = stoi(argv[3]);
+         int fidx = stoi(argv[3]);
          int coreNum = stoi(argv[4]);
-         for(int i=0;i<fn;i++){
-            Problem p =readSingleProblem(dir+"/"+to_string(i+1));
-            calMaxFlowParallel(p,coreNum,dir,1,i+1);
+         Problem p =readSingleProblem(dir+"/"+to_string(fidx));
+            calMaxFlowParallel(p,coreNum,dir,1,fidx);
             for(int i=0;i<p.g.num_vertices;i++){
             free(p.g.capacities[i]);
          }
          free(p.g.capacities);
-         }
          return 0;
       }else if(choice == "cache"){
          string dir(argv[2]);
-         int fn = stoi(argv[3]);
+         int fidx = stoi(argv[3]);
          int coreNum = stoi(argv[4]);
-         for(int i=0;i<fn;i++){
-            Problem p =readSingleProblem(dir+"/"+to_string(i+1));
-            calCacheMaxFlowParallel(p,coreNum,dir,1,i+1);
+         Problem p =readSingleProblem(dir+"/"+to_string(fidx));
+            calCacheMaxFlowParallel(p,coreNum,dir,1,fidx);
             for(int i=0;i<p.g.num_vertices;i++){
             free(p.g.capacities[i]);
          }
          free(p.g.capacities);
-         }
          return 0;
       }
    }
