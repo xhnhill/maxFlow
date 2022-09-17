@@ -100,6 +100,43 @@ bool compare(Problem p,int corenum,string target,string dir,string idx){
    return flg;
 
 }
+bool parallelCompare(Problem p,int corenum,string target,string dir,string idx,int outNum){
+   
+   bool flg = true;
+   ofstream exp;
+   exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(corenum)+target+dir+"_"+idx);
+   double sum = 0;
+   double* d_arr = (double*)calloc(p.actualNum*p.actualNum, sizeof(double));
+   #pragma omp parallel for collapse(2) num_threads(outNum)
+   for(int i =0;i<p.actualNum;i++){
+      for(int j = 0;j<p.actualNum;j++){
+         if(i!=j){
+            MaxFlowStd mf;
+            mf.g = p.g;
+            mf.sc = i;
+            mf.sk =j;
+            MaxFlowRes ms;
+            PushRelabelAlgo ps;
+            double dt = ps.pushRelabelWrapper(&mf,&ms,max(1,corenum/outNum));
+            d_arr[i*p.actualNum+j] = dt;
+            if(ms.val !=p.compareMatrix[i][j]){
+               cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
+               flg = false;
+            }
+
+         }
+      }
+   }
+   for(int i =0;i<p.actualNum*p.actualNum;i++){
+      sum = sum+d_arr[i];
+   }
+   free(d_arr);
+   exp<<sum;
+   cout<<sum<<" ";
+   exp.close();
+   return flg;
+
+}
 void testCode(){
    tbb::concurrent_vector<int> q;
    Graph g;
@@ -134,7 +171,7 @@ int main(int arg,char** argv)
       string tar(argv[3]);
       cout<<"correct param\n";
       for(int i=1;i<=num;i++){
-         omp_set_num_threads(8);
+         omp_set_num_threads(coreNum);
          Problem p = readGraph(dir+"/"+to_string(i));
          compare(p,coreNum,tar,dir,to_string(i));
          for(int i=0;i<p.g.num_vertices;i++){
@@ -142,11 +179,43 @@ int main(int arg,char** argv)
          }
          free(p.g.capacities);
       }
-   }else{
+   }else if(arg == 6){
+      //This para should be set to achieve performance
+      omp_set_nested(1);
+      int num = stoi(argv[2]);
+      int coreNum = stoi(argv[4]);
+      int outNum = stoi(argv[5]);
+      string dir(argv[1]);
+      string tar(argv[3]);
+      for(int i=1;i<=num;i++){
+         
+         Problem p = readGraph(dir+"/"+to_string(i));
+         parallelCompare(p,coreNum,tar,dir,to_string(i),outNum);
+         for(int i=0;i<p.g.num_vertices;i++){
+            free(p.g.capacities[i]);
+         }
+         free(p.g.capacities);
+      }
+   }else if(arg == 2){
+      //Here we test functions of openmp
+      std::atomic<int> x(0);
+      omp_set_nested(1);
+      omp_set_num_threads(2);
+      #pragma omp parallel
+      {
+         omp_set_num_threads(4);
+         #pragma omp parallel
+         {
+            x++;
+         }
+      }
+      cout<<x<<"\n";
+   }
+   else{
       //using default
       omp_set_num_threads(8);
-      Problem p = readGraph("default");
-      noWriteCompare(p);
+      //Problem p = readGraph("default");
+      //noWriteCompare(p);
       cout<<"finished\n";
 
    }

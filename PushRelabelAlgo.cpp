@@ -296,3 +296,10 @@ double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         return duration;
 
 }
+double PushRelabelAlgo::pushRelabelWrapper(MaxFlowStd *mx,MaxFlowRes *result,int coreNum){
+    Clock c;
+    c.reset();
+    omp_set_num_threads(coreNum);
+    pushRelabel(mx,result);
+    return c.duration();
+}

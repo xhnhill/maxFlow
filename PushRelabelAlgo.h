@@ -45,6 +45,7 @@ class PushRelabelAlgo{
     public:
     Clock c;
      double pushRelabel(MaxFlowStd *mx,MaxFlowRes *result);
+     double pushRelabelWrapper(MaxFlowStd *mx,MaxFlowRes *result,int coreNum);
     private:
     //excess val of vertex
     int* ex;
