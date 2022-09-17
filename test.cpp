@@ -40,12 +40,12 @@ Problem readGraph(string path){
    
    
 }
-bool compare(Problem p,int corenum,string target,string dir,string idx){
+bool noWriteCompare(Problem p){
    MaxFlowStd mf;
    mf.g = p.g;
    bool flg = true;
-   ofstream exp;
-   exp.open(dir+"/res"+to_string(corenum)+target+dir+"_"+idx);
+   double avg =0;
+   double count =0;
    for(int i =0;i<p.actualNum;i++){
       for(int j = 0;j<p.actualNum;j++){
          if(i!=j){
@@ -54,8 +54,6 @@ bool compare(Problem p,int corenum,string target,string dir,string idx){
             MaxFlowRes ms;
             PushRelabelAlgo ps;
             double dt = ps.pushRelabel(&mf,&ms);
-            exp<<dt;
-            exp<<" ";
             if(ms.val !=p.compareMatrix[i][j]){
                cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
                flg = false;
@@ -64,6 +62,40 @@ bool compare(Problem p,int corenum,string target,string dir,string idx){
          }
       }
    }
+   
+   return flg;
+}
+bool compare(Problem p,int corenum,string target,string dir,string idx){
+   MaxFlowStd mf;
+   mf.g = p.g;
+   bool flg = true;
+   ofstream exp;
+   exp.open(dir+"/res"+to_string(corenum)+target+dir+"_"+idx);
+   double avg =0;
+   double count =0;
+   for(int i =0;i<p.actualNum;i++){
+      for(int j = 0;j<p.actualNum;j++){
+         if(i!=j){
+            mf.sc = i;
+            mf.sk =j;
+            MaxFlowRes ms;
+            PushRelabelAlgo ps;
+            double dt = ps.pushRelabel(&mf,&ms);
+            count = count+1;
+            avg=(avg+dt) / count;
+            
+            exp<<dt;
+            exp<<" ";
+            cout<<dt<<" \n";
+            if(ms.val !=p.compareMatrix[i][j]){
+               cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
+               flg = false;
+            }
+
+         }
+      }
+   }
+   cout<<avg<<" ";
    exp.close();
    return flg;
 
@@ -110,11 +142,18 @@ int main(int arg,char** argv)
          }
          free(p.g.capacities);
       }
+   }else{
+      //using default
+      omp_set_num_threads(8);
+      Problem p = readGraph("default");
+      noWriteCompare(p);
+      cout<<"finished\n";
+
    }
 
-   omp_set_num_threads(8);
-   string d = "dir";
-   //Problem p = readGraph(d+"/"+to_string(1));
+   //omp_set_num_threads(8);
+   //string d = "dir";
+   //Problem p = readGraph(to_string(1));
    //cout<<compare(p,8,"whole","2","1")<<" finished\n";
 }
 
