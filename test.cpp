@@ -40,6 +40,29 @@ Problem readGraph(string path){
    
    
 }
+Problem readSingleProblem(string path){
+   ifstream inStream (path);
+   int fullNum; inStream>>fullNum;
+   int edgePairNum; inStream>>edgePairNum;
+   int actualNodeNum; inStream>>actualNodeNum;
+   int res; inStream>>res;
+   int** cap = new int*[fullNum];
+   for(int i =0;i<fullNum;i++){
+      cap[i] = new int[fullNum];
+   }
+   for(int i = 0;i<edgePairNum;i++){
+      int sc;inStream>>sc;
+      int tar;inStream>>tar;
+      inStream >> cap[sc-1][tar-1];
+   }
+   
+   int allMin; inStream>>allMin;
+   Graph g;
+   g.num_vertices = fullNum;
+   g.capacities = cap;
+   Problem p; p.res = allMin;p.actualNum=actualNodeNum;p.g=g;
+   return p;
+}
 bool noWriteCompare(Problem p){
    MaxFlowStd mf;
    mf.g = p.g;
@@ -133,6 +156,27 @@ bool parallelCompare(Problem p,int corenum,string target,string dir,string idx,i
    return flg;
 
 }
+void calMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx){
+   Clock c;
+   c.reset();
+            MaxFlowStd mf;
+            mf.g = p.g;
+            mf.sc = 0;
+            mf.sk =p.actualNum-1;
+            MaxFlowRes ms;
+            PushRelabelAlgo ps;
+            double dt = ps.pushRelabelWrapper(&mf,&ms,coreNum);
+            if(ms.val !=p.res){
+               cout<<"does not match\n";
+               
+            }
+            ofstream exp;
+            exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(coreNum)+"single"+dir+"_"+to_string(idx));
+            exp<<c.duration();
+            exp.close();
+            
+
+}
 void testCode(){
    tbb::concurrent_vector<int> q;
    Graph g;
@@ -159,6 +203,19 @@ void testCode(){
 int main(int arg,char** argv)
 {
    //testCode();
+   if(arg>1){
+      string single(argv[1]);
+      if(single == "single"){
+         string dir(argv[2]);
+         int fn = stoi(argv[3]);
+         int coreNum = stoi(argv[4]);
+         for(int i=0;i<fn;i++){
+            Problem p =readSingleProblem(dir+"/"+to_string(i+1));
+            calMaxFlowParallel(p,coreNum,dir,1,i+1);
+         }
+         return 0;
+      }
+   }
    if(arg == 5){
       
       int num = stoi(argv[2]);
