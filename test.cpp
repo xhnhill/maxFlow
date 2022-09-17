@@ -272,23 +272,21 @@ int main(int arg,char** argv)
          }
          free(p.g.capacities);
       }
-   }else if(arg == 6){
+   }else if(arg == 7){
       //This para should be set to achieve performance
       omp_set_nested(1);
       int num = stoi(argv[2]);
       int coreNum = stoi(argv[4]);
       int outNum = stoi(argv[5]);
+      int fileIdx = stoi(argv[6]);
       string dir(argv[1]);
       string tar(argv[3]);
-      for(int i=1;i<=num;i++){
-         
-         Problem p = readGraph(dir+"/"+to_string(i));
-         parallelCompare(p,coreNum,tar,dir,to_string(i),outNum);
+      Problem p = readGraph(dir+"/"+to_string(fileIdx));
+         parallelCompare(p,coreNum,tar,dir,to_string(fileIdx),outNum);
          for(int i=0;i<p.g.num_vertices;i++){
             free(p.g.capacities[i]);
          }
          free(p.g.capacities);
-      }
    }else if(arg == 2){
       //Here we test functions of openmp
       std::atomic<int> x(0);
