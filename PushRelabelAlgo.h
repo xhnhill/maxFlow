@@ -29,6 +29,7 @@ class Problem{
   int** compareMatrix;
   int res;
   int actualNum;
+  int totalNum;
 };
 class Clock{
     public:

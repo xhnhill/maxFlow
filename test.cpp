@@ -60,7 +60,7 @@ Problem readSingleProblem(string path){
    Graph g;
    g.num_vertices = fullNum;
    g.capacities = cap;
-   Problem p; p.res = allMin;p.actualNum=actualNodeNum;p.g=g;
+   Problem p; p.res = allMin;p.actualNum=actualNodeNum;p.g=g;p.totalNum=fullNum;
    return p;
 }
 bool noWriteCompare(Problem p){
@@ -175,6 +175,7 @@ void calMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx){
             exp<<c.duration();
             exp.close();
             
+            
 
 }
 void testCode(){
@@ -212,6 +213,10 @@ int main(int arg,char** argv)
          for(int i=0;i<fn;i++){
             Problem p =readSingleProblem(dir+"/"+to_string(i+1));
             calMaxFlowParallel(p,coreNum,dir,1,i+1);
+            for(int i=0;i<p.g.num_vertices;i++){
+            free(p.g.capacities[i]);
+         }
+         free(p.g.capacities);
          }
          return 0;
       }
