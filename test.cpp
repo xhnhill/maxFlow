@@ -178,6 +178,28 @@ void calMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx){
             
 
 }
+void calCacheMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx){
+   Clock c;
+   c.reset();
+            MaxFlowStd mf;
+            mf.g = p.g;
+            mf.sc = 0;
+            mf.sk =p.actualNum-1;
+            MaxFlowRes ms;
+            PushRelabelAlgo ps;
+            double dt = ps.cachePushRelabelWrapper(&mf,&ms,coreNum);
+            if(ms.val !=p.res){
+               cout<<"does not match\n";
+               
+            }
+            ofstream exp;
+            exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(coreNum)+"cache"+dir+"_"+to_string(idx));
+            exp<<c.duration();
+            exp.close();
+            
+            
+
+}
 void testCode(){
    tbb::concurrent_vector<int> q;
    Graph g;
@@ -205,14 +227,27 @@ int main(int arg,char** argv)
 {
    //testCode();
    if(arg>1){
-      string single(argv[1]);
-      if(single == "single"){
+      string choice(argv[1]);
+      if(choice == "single"){
          string dir(argv[2]);
          int fn = stoi(argv[3]);
          int coreNum = stoi(argv[4]);
          for(int i=0;i<fn;i++){
             Problem p =readSingleProblem(dir+"/"+to_string(i+1));
             calMaxFlowParallel(p,coreNum,dir,1,i+1);
+            for(int i=0;i<p.g.num_vertices;i++){
+            free(p.g.capacities[i]);
+         }
+         free(p.g.capacities);
+         }
+         return 0;
+      }else if(choice == "cache"){
+         string dir(argv[2]);
+         int fn = stoi(argv[3]);
+         int coreNum = stoi(argv[4]);
+         for(int i=0;i<fn;i++){
+            Problem p =readSingleProblem(dir+"/"+to_string(i+1));
+            calCacheMaxFlowParallel(p,coreNum,dir,1,i+1);
             for(int i=0;i<p.g.num_vertices;i++){
             free(p.g.capacities[i]);
          }

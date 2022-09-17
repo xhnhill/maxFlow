@@ -47,6 +47,8 @@ class PushRelabelAlgo{
     Clock c;
      double pushRelabel(MaxFlowStd *mx,MaxFlowRes *result);
      double pushRelabelWrapper(MaxFlowStd *mx,MaxFlowRes *result,int coreNum);
+     double cachePushRelabel(MaxFlowStd *mx,MaxFlowRes *result);
+     double cachePushRelabelWrapper(MaxFlowStd *mx,MaxFlowRes *result,int coreNum);
     private:
     //excess val of vertex
     int* ex;
@@ -67,6 +69,7 @@ class PushRelabelAlgo{
     void init(MaxFlowStd* mx);
     void preflow(MaxFlowStd* mx);
     void globalRelabel(int numV, int sc, int sk);
+    void cacheGlobalRelabel(int numV, int sc, int sk);
     void tryGlobalRelabel(MaxFlowStd *mx, MaxFlowStd *res);
     
 
