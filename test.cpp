@@ -105,8 +105,8 @@ bool parallelCompare(Problem p,int corenum,string target,string dir,string idx,i
    bool flg = true;
    ofstream exp;
    exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(corenum)+target+dir+"_"+idx);
-   double sum = 0;
-   double* d_arr = (double*)calloc(p.actualNum*p.actualNum, sizeof(double));
+   Clock c;
+   c.reset();
    #pragma omp parallel for collapse(2) num_threads(outNum)
    for(int i =0;i<p.actualNum;i++){
       for(int j = 0;j<p.actualNum;j++){
@@ -118,7 +118,6 @@ bool parallelCompare(Problem p,int corenum,string target,string dir,string idx,i
             MaxFlowRes ms;
             PushRelabelAlgo ps;
             double dt = ps.pushRelabelWrapper(&mf,&ms,max(1,corenum/outNum));
-            d_arr[i*p.actualNum+j] = dt;
             if(ms.val !=p.compareMatrix[i][j]){
                cout<<"src-sink "<<""+to_string(i)+" "+to_string(j)<<"does not match";
                flg = false;
@@ -127,12 +126,9 @@ bool parallelCompare(Problem p,int corenum,string target,string dir,string idx,i
          }
       }
    }
-   for(int i =0;i<p.actualNum*p.actualNum;i++){
-      sum = sum+d_arr[i];
-   }
-   free(d_arr);
-   exp<<sum;
-   cout<<sum<<" ";
+   double duration = c.duration();
+   exp<<duration;
+   cout<<duration<<" ";
    exp.close();
    return flg;
 
