@@ -171,8 +171,10 @@ void calMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx){
                
             }
             ofstream exp;
+            double duration = c.duration();;
             exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(coreNum)+"single"+dir+"_"+to_string(idx));
-            exp<<c.duration();
+            exp<<duration;
+            cout<<"dir is "+dir<<"the inner time is "<<dt;
             exp.close();
             
             
@@ -193,8 +195,10 @@ void calCacheMaxFlowParallel(Problem p,int coreNum,string dir,int outNum,int idx
                
             }
             ofstream exp;
+            double duration = c.duration();
             exp.open(dir+"/res"+to_string(outNum)+"_"+to_string(coreNum)+"cache"+dir+"_"+to_string(idx));
-            exp<<c.duration();
+            exp<<duration;
+            cout<<"dir is "+dir<<"the inner time is "<<dt;
             exp.close();
             
             
