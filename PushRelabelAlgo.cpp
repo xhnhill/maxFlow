@@ -39,7 +39,7 @@ void PushRelabelAlgo::preflow(MaxFlowStd* mx){
     h[sc] = nv;
     localLabel[sc] = nv;
 
-    #pragma omp parallel for proc_bind(close)
+    #pragma omp parallel for proc_bind(spread)
     for(int i = 0;i<nv;i++){
         if(g[sc][i] >0 && i != sc){
             flows[sc][i] = g[sc][i];
@@ -63,7 +63,7 @@ void PushRelabelAlgo::preflow(MaxFlowStd* mx){
 }
 void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
     //Any need ?
-    #pragma omp parallel for proc_bind(close)
+    #pragma omp parallel for proc_bind(spread)
     for(int i = 0; i < nv; i++){
         h[i] = nv;
     }
@@ -81,7 +81,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
         }
     }
     while(!queue.empty()){
-        #pragma omp parallel for proc_bind(close)
+        #pragma omp parallel for proc_bind(spread)
         for(int i=0;i<queue.size();i++){
             int cur = queue[i];
             discoveredVertices[cur].clear();
@@ -104,7 +104,7 @@ void PushRelabelAlgo::globalRelabel(int nv, int sc, int sk){
         //Difference??
         
         for(int i:queue){
-            #pragma omp parallel for proc_bind(close)
+            #pragma omp parallel for proc_bind(spread)
             for(int j =0;j<discoveredVertices[i].size();j++){
                 tmp.push_back(discoveredVertices[i][j]);
                 //cout<<"push "<<discoveredVertices[cur][j]<<"\n";
@@ -193,7 +193,7 @@ double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             workSinceLastGR = 0;
             globalRelabel(nv, sc, sk);
             //Test parallel performance here
-            #pragma omp parallel for proc_bind(close)
+            #pragma omp parallel for proc_bind(spread)
             for(int i = 0; i < nv; i++){
             localLabel[i] = h[i];
             }
@@ -208,7 +208,7 @@ double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
         if(activeSet.empty()) {
             break;
         }
-        #pragma omp parallel proc_bind(close)
+        #pragma omp parallel proc_bind(spread)
         {
             #pragma omp single
             {
@@ -285,7 +285,7 @@ double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
             }
             #pragma omp taskwait
         }
-        #pragma omp parallel for proc_bind(close)
+        #pragma omp parallel for proc_bind(spread)
         for(int i=0;i<nv;i++){
             h[i] = localLabel[i];
             //atomic attention
@@ -309,7 +309,7 @@ double PushRelabelAlgo::pushRelabel(MaxFlowStd* mx,MaxFlowRes *rest){
 
         }
         activeSet.swap(swpSet);
-        #pragma omp parallel proc_bind(close)
+        #pragma omp parallel proc_bind(spread)
         {
            #pragma omp single
            {
