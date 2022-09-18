@@ -229,6 +229,7 @@ void testCode(){
 
 int main(int arg,char** argv)
 {
+   cout<<"processor close version\n";
    //testCode();
    if(arg>1){
       string choice(argv[1]);
