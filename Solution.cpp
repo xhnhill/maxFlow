@@ -1,3 +1,14 @@
+//Could compile with the following command in the current directory
+// g++ -g *.cpp -o app -fopenmp -I/usr/include/tbb -ltbb
+//Could use the generated app file in following way
+//./app single 0 1 36 36
+// single is to run parallelized max flow singlely, 0 is dir , 1 is the name of file
+// the first 36 is the needed core num
+//The second 36 is the core for outer loop
+// Or using like  ./app 2 6 whole 18 18 1
+// 2 is dir , 6 tag(just string), whole is label, 18 is core num, the next 18 is 
+//core for outer loop, 1 is filename
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -229,6 +240,7 @@ void testCode(){
 
 int main(int arg,char** argv)
 {
+   cout<<"spread version \n";
    //testCode();
    if(arg>1){
       string choice(argv[1]);
