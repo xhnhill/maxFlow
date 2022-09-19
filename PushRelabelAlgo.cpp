@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <omp.h>
-#include "baseClass.h"
 #include "tbb/concurrent_vector.h"
 #include "tbb/concurrent_unordered_set.h"
 #include <atomic>
