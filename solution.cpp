@@ -10,6 +10,8 @@
 #include <string>
 using namespace std;
 //Usage Example
+//please install tbb first, this code use tbb provided by intel to make use of it concurrent container
+//If you use spartan, itis already there, please load the module
 //compile with the command : g++ -g *.cpp -o test -fopenmp -I/usr/include/tbb -ltbb
 //If using spartan, please load module load gcccore/10.2.0 module load tbb/2020.3  first
 //To use the code, run command like following
@@ -34,6 +36,7 @@ using namespace std;
 //If you want to generate more graphs, please seek https://github.com/xhnhill/MaxFlowGraphGenerator.git
 //I have developed the above java code for generation
 //One more thing you need attention, this code's output (including system.out and files generated contains the execution time.)
+//The execution is used to measure the performance.
 //If you want test it on your own data, please define files like the required input, which is defined in dir directory with info.txt
 //If you want to test the minum of all max flow,and see if your result is right, use the above required graph format, if it is wrong, the program will output wrong match on output
 //If you just want to test the max flow problem, please use the required graph format, and run with the command with single parameter.

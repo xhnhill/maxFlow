@@ -1,5 +1,5 @@
 All the file could be open by text editor
-File  1,2 could be used to test the whole algorithm, which means it calculates all pairs.
+File  2 could be used to test the whole algorithm, which means it calculates all pairs.
 The file has the following format
 
 Final_node_number Final_Edge_Number problem_Node_number minimum_max_flow_value
@@ -7,10 +7,13 @@ start_node end_node capacity
 ....
 a matrix that contains the max flow value between each pairs, the size is Final_node_number*Final_node_number
 
-File 5 could be used to test the single parallelized max flow algorithm, it takes the following data format, separated by white space, this graph is huge
+File 1,3,5 could be used to test the single parallelized max flow algorithm, it takes the following data format, separated by white space, this graph is huge
 Final_node_number Final_Edge_Number problem_Node_number max_flow_value(between Source:node1 and the Sink: node with the largest index)
 start_node end_node capacity
 start_node end_node capacity
 ....
 start_node end_node capacity
 max_flow_value
+
+Using the following link to generate more graph, https://github.com/xhnhill/MaxFlowGraphGenerator.git
+I create it for this project
